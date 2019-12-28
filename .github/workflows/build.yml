@@ -99,8 +99,6 @@ jobs:
           sudo tar xf cmake.tar.gz --strip 1 -C /usr/local
           sudo apt-get install ninja-build
           vcpkg install doctest
-          echo $VCPKG_INSTALLATION_ROOT
-          where vcpkg
 
           # LLVM 9 is not yet in bionic's repositories.
           sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
@@ -116,6 +114,7 @@ jobs:
           brew update
           brew install pkg-config libomp
           brew install ninja lcov
+          vcpkg install doctest
 
       - name: Install (Windows)
         if: runner.os == 'Windows'
@@ -123,7 +122,7 @@ jobs:
         run: |
           iex (new-object net.webclient).downloadstring('https://get.scoop.sh')
           scoop install ninja llvm --global
-          vcpkg install curl:x64-Windows
+          vcpkg install doctest:x64-Windows
 
           if ("${{ matrix.compiler }}" -eq "clang") {
             echo "::set-env name=CC::clang"
@@ -140,7 +139,7 @@ jobs:
           ANTARA_BUILD_TYPE: ${{matrix.cmake_build_type}}
         if: runner.os == 'Linux' || runner.os == 'macOS'
         run: |
-          cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=${ANTARA_BUILD_TYPE} -DANTARA_DEVELOP:BOOL=ON
+          cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=${ANTARA_BUILD_TYPE} -DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake -DANTARA_DEVELOP:BOOL=ON
 
       - name: Configure (Windows)
         env:
