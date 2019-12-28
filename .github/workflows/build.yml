@@ -99,6 +99,8 @@ jobs:
           sudo tar xf cmake.tar.gz --strip 1 -C /usr/local
           sudo apt-get install ninja-build
           vcpkg install doctest
+          echo $VCPKG_INSTALLATION_ROOT
+          where vcpkg
 
           # LLVM 9 is not yet in bionic's repositories.
           sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
