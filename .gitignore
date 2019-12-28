@@ -31,3 +31,6 @@
 *.out
 *.app
 /.idea/
+/.idea/
+.idea
+/include/antara/config/version.hpp

@@ -14,5 +14,13 @@
  *                                                                            *
  ******************************************************************************/
 
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+//! Dependencies Headers
 #include <doctest/doctest.h>
+
+//! Project Headers
+#include "antara/config/version.hpp"
+
+TEST_CASE("Retrieve current version")
+{
+    CHECK(antara::config::version() != nullptr);
+}

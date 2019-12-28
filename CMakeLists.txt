@@ -15,6 +15,10 @@ message(STATUS "${PROJECT_NAME} current version: ${VERSION_NB}")
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 include(antara)
 
+if (NOT EXISTS ${PROJECT_SOURCE_DIR}/include/antara/config/version.hpp)
+    configure_file(${CMAKE_MODULE_PATH}/version.hpp.in ${PROJECT_SOURCE_DIR}/include/antara/config/version.hpp @ONLY)
+endif ()
+
 ##! Options
 option(ANTARA_TESTS "Build tests." ${ANTARA_DEVELOP})
 option(ANTARA_EXAMPLES "Build Examples." ${ANTARA_DEVELOP})

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2013-2019 The Komodo Platform Developers.                      *
+ * Copyright � 2013-2019 The Komodo Platform Developers.                      *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -14,5 +14,12 @@
  *                                                                            *
  ******************************************************************************/
 
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include <doctest/doctest.h>
+#pragma once
+
+namespace antara::config
+{
+    constexpr const char *version() noexcept
+    {
+        return "@PROJECT_VERSION@";
+    }
+}
