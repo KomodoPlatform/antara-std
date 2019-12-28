@@ -12,7 +12,8 @@ project(antara-std
 message(STATUS "${PROJECT_NAME} current version: ${VERSION_NB}")
 
 ##! Configuration
-include(cmake/antara.cmake)
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+include(antara)
 
 ##! Options
 option(ANTARA_TESTS "Build tests." ${ANTARA_DEVELOP})
