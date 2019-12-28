@@ -26,26 +26,32 @@ jobs:
         ]
 
         include:
-          - name: ubuntu-18-04-clang-8-debug
-            os: ubuntu-18.04
+          - name: ubuntu-18-04-clang-9-debug
+            os: ubuntu-latest
             cmake_build_type: Debug
             compiler: clang
             version: "9"
 
-          - name: ubuntu-18-04-clang-8-debug-tsan
-            os: ubuntu-18.04
+          - name: ubuntu-18-04-clang-9-release
+            os: ubuntu-latest
+            cmake_build_type: Release
+            compiler: clang
+            version: "9"
+
+          - name: ubuntu-18-04-clang-9-debug-tsan
+            os: ubuntu-latest
             cmake_build_type: Debug
             compiler: clang
             version: "9"
 
-          - name: ubuntu-18-04-clang-8-debug-ubsan
-            os: ubuntu-18.04
+          - name: ubuntu-18-04-clang-9-debug-ubsan
+            os: ubuntu-latest
             cmake_build_type: Debug
             compiler: clang
             version: "9"
 
-          - name: ubuntu-18-04-clang-8-debug-asan
-            os: ubuntu-18.04
+          - name: ubuntu-18-04-clang-9-debug-asan
+            os: ubuntu-latest
             cmake_build_type: Debug
             compiler: clang
             version: "9"
