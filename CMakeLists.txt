@@ -21,6 +21,7 @@ option(ANTARA_EXAMPLES "Build Examples." ${ANTARA_DEVELOP})
 option(ANTARA_ASAN "Enable asan for targets" OFF)
 option(ANTARA_UBSAN "Enable ubsan for targets" OFF)
 option(ANTARA_TSAN "Enable tsan for targets" OFF)
+option(ANTARA_COVERAGE "Enable coverage for targets" OFF)
 
 ##! Tests
 if (ANTARA_TESTS)

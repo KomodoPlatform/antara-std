@@ -1,0 +1,208 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  ci:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        name: [
+          ubuntu-18-04-clang-9-debug,
+          ubuntu-18-04-clang-9-debug-tsan,
+          ubuntu-18-04-clang-9-debug-asan,
+          ubuntu-18-04-clang-9-debug-ubsan,
+          ubuntu-18-04-clang-9-release,
+
+          macos-10-15-clang-9-debug,
+          macos-10-15-clang-9-release,
+
+          windows-2019-clang-cl-debug,
+          windows-2019-clang-cl-release,
+          windows-2019-clang-debug,
+          windows-2019-clang-release
+        ]
+
+        include:
+          - name: ubuntu-18-04-clang-8-debug
+            os: ubuntu-18.04
+            cmake_build_type: Debug
+            compiler: clang
+            version: "9"
+
+          - name: ubuntu-18-04-clang-8-debug-tsan
+            os: ubuntu-18.04
+            cmake_build_type: Debug
+            compiler: clang
+            version: "9"
+
+          - name: ubuntu-18-04-clang-8-debug-ubsan
+            os: ubuntu-18.04
+            cmake_build_type: Debug
+            compiler: clang
+            version: "9"
+
+          - name: ubuntu-18-04-clang-8-debug-asan
+            os: ubuntu-18.04
+            cmake_build_type: Debug
+            compiler: clang
+            version: "9"
+
+          - name: windows-2019-clang-cl-debug
+            cmake_build_type: Debug
+            os: windows-2019
+            compiler: clang-cl
+
+          - name: windows-2019-clang-debug
+            cmake_build_type: Debug
+            os: windows-2019
+            compiler: clang
+
+          - name: macos-10-15-clang-9-debug
+            cmake_build_type: Debug
+            os: macOS-latest
+            compiler: clang
+            version: "9"
+
+          - name: windows-2019-clang-cl-release
+            cmake_build_type: Release
+            os: windows-2019
+            compiler: clang-cl
+
+          - name: windows-2019-clang-release
+            cmake_build_type: Release
+            os: windows-2019
+            compiler: clang
+
+          - name: macos-10-15-clang-9-release
+            cmake_build_type: Release
+            os: macOS-latest
+            compiler: clang
+            version: "9"
+
+
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Install (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          curl -sSL https://github.com/Kitware/CMake/releases/download/v3.15.3/cmake-3.15.3-Linux-x86_64.tar.gz -o cmake.tar.gz
+          sudo tar xf cmake.tar.gz --strip 1 -C /usr/local
+          sudo apt-get install ninja-build
+
+          # LLVM 9 is not yet in bionic's repositories.
+          sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
+          sudo apt-get update
+          sudo apt-get install -y clang-${{ matrix.version }} lld-${{ matrix.version }} libstdc++-${{ matrix.version }}-dev gcc-8 g++-8 libc++-${{ matrix.version }}-dev libc++abi-${{ matrix.version }}-dev
+          echo "::set-env name=CC::clang-${{ matrix.version }}"
+          echo "::set-env name=CXX::clang++-${{ matrix.version }}"
+
+      - name: Install (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install pkg-config libomp
+          brew install ninja lcov
+
+      - name: Install (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          iex (new-object net.webclient).downloadstring('https://get.scoop.sh')
+          scoop install ninja llvm --global
+          vcpkg install curl:x64-Windows
+
+          if ("${{ matrix.compiler }}" -eq "clang") {
+            echo "::set-env name=CC::clang"
+            echo "::set-env name=CXX::clang++"
+          } else {
+            echo "::set-env name=CC::${{ matrix.compiler }}"
+            echo "::set-env name=CXX::${{ matrix.compiler }}"
+          }
+
+          & .github\workflows\vsenv.bat -arch=x64 -host_arch=x64
+
+      - name: Configure
+        env:
+          ANTARA_BUILD_TYPE: ${{matrix.cmake_build_type}}
+        if: runner.os == 'Linux' || runner.os == 'macOS'
+        run: |
+          cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=${ANTARA_BUILD_TYPE} -DANTARA_DEVELOP:BOOL=ON
+
+      - name: Configure (Windows)
+        env:
+          ANTARA_BUILD_TYPE: ${{matrix.cmake_build_type}}
+        if: runner.os == 'Windows'
+        run: |
+          cmake -B build -S %GITHUB_WORKSPACE% -G Ninja -DCMAKE_TOOLCHAIN_FILE=%VCPKG_INSTALLATION_ROOT%/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=%ANTARA_BUILD_TYPE% -DANTARA_DEVELOP:BOOL=ON
+        shell: cmd
+
+      - name: TSan (Linux)
+        if: matrix.name == 'ubuntu-18-04-clang-8-debug-tsan'
+        run: cmake build -DANTARA_TSAN=ON
+
+      - name: ASan (Linux)
+        if: matrix.name == 'ubuntu-18-04-clang-8-debug-asan'
+        run: cmake build -DANTARA_ASAN=ON
+
+      - name: UBSan (Linux)
+        if: matrix.name == 'ubuntu-18-04-clang-8-debug-ubsan'
+        run: cmake build -DANTARA_UBSAN=ON -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld-${{ matrix.version }}
+
+      - name: Coverage (OSX)
+        if: runner.os == 'macOS' && matrix.cmake_build_type == 'Debug'
+        run: cmake build -DANTARA_COVERAGE=ON
+
+      - name: Build
+        run: cmake --build build --config ${{matrix.cmake_build_type}}
+
+      - name: Run Tests (Linux and OSX)
+        working-directory: build/test
+        if: runner.os == 'Linux' || runner.os == 'macOS'
+        run: |
+          ./antara-tests --reporters=xml --out=antara-tests-result.xml -s || true
+
+      - name: Run Tests (Windows)
+        working-directory: build/test
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $filePattern = '*-tests.exe'
+          foreach ($file in get-ChildItem $filePattern)
+          {
+            $var = $file.name
+            & cmd /c "$var --reporters=xml --out=$var-result.xml -s 2>&1"
+          }
+
+      - name: Upload coverage (OSX)
+        working-directory: build
+        if: runner.os == 'macOS' && matrix.cmake_build_type == 'Debug'
+        env: # Or as an environment variable
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: |
+          echo "workspace is: ${GITHUB_WORKSPACE}"
+          lcov -d . -c -o coverage.info
+          lcov -r coverage.info "/usr*" -o coverage.info
+          lcov -l coverage.info
+          bash <(curl -s https://codecov.io/bash) -v -g ${GITHUB_WORKSPACE}/build/_deps/* -f coverage.info || echo "Codecov did not collect coverage reports"
+
+
+      - name: Upload Test (Unix)
+        env: # Or as an environment variable
+          REPORT_CI_TOKEN: ${{ secrets.REPORT_CI_TOKEN }}
+        working-directory: build/test
+        if: runner.os == 'Linux' || runner.os == 'macOS'
+        run: curl https://report.ci/upload.py --output upload.py && python upload.py --sha $GITHUB_SHA -n "[Doctest ${{ matrix.name }}]" --include='antara-tests-result.xml' --merge ".*"
+
+      - name: Upload Test (Windows)
+        env: # Or as an environment variable
+          REPORT_CI_TOKEN: ${{ secrets.REPORT_CI_TOKEN }}
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          Invoke-WebRequest -Uri https://report.ci/upload.py -OutFile upload.py
+          python upload.py --sha $env:GITHUB_SHA -n "[Doctest ${{ matrix.name }}]" --include='antara-tests-result.xml' --framework=doctest --merge .*
