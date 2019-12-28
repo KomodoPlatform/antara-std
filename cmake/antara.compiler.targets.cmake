@@ -101,8 +101,14 @@ target_link_libraries(antara_std_cross_filesystem INTERFACE
 target_compile_options(antara_std_cross_filesystem INTERFACE
         $<$<AND:$<PLATFORM_ID:Darwin>,$<VERSION_GREATER:$<CXX_COMPILER_VERSION>,8.0>>:-mmacosx-version-min=10.15>)
 
+add_library(antara_std_dependencies INTERFACE)
+find_package(Boost)
+target_link_libraries(antara_std_dependencies INTERFACE Boost::headers)
+add_library(antara_std::dependencies ALIAS antara_std_dependencies)
+
 add_library(antara_std_default_settings INTERFACE)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-target_link_libraries(antara_std_default_settings INTERFACE antara_std::error_settings antara_std::optimize_settings antara_std::defaults_features antara_std::cross_filesystem Threads::Threads)
+target_link_libraries(antara_std_default_settings INTERFACE antara_std::dependencies antara_std::error_settings antara_std::optimize_settings antara_std::defaults_features antara_std::cross_filesystem Threads::Threads)
 add_library(antara_std::default_settings ALIAS antara_std_default_settings)
+
